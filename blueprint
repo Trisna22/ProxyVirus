@@ -1,0 +1,55 @@
+
+Virus that will lead you trough the inside of the network from the outside.
+
+
+    Hacker
+	|
+External network
+	|		        	==========================Internal network========
+	|	Vulnerbility->	||												||
+	|________________________________________							||
+											|							||
+			        	||  			ProxyVirus (infected computer)	||
+						||					|							||
+						||					|_______					||
+						||							|					||
+						||							Target computer		||
+						==================================================
+
+				ramb0 (c) 2019
+
+
+
+Step	Client						Server
+
+1.	Connect Server -->				Accept client
+2.	Send connect info -->			Receive connect info and connect to server with info
+3.	All next data is bounced		All data from server and client gets bounced
+
+
+
+
+CONNECT MESSAGE:				
+		PROXY_SERVER_CLIENT_HELLO	PROXY_SERVER_SERVER_HELLO
+PROXY COMMANDS:
+		TAP {IP/HOSTNAME}
+		CONNECT {IP/HOSTNAME}:{PORT}
+		CURL {IP/HOSTNAME} (default port 443)
+		CURL8 {IP/HOSTNAME} (port 80)
+		CURL4 {IP/HOSTNAME} (port 443)
+		CURLP {IP/HOSTNAME}:{PORT} (input port)
+		
+
+CONNECT INFORMATION:
+		CONNECT {IP/HOSTNAME}:{PORT}	
+						if success => CONNECT 100 OK\n
+						else		CONNECT 101 Connection Refused\n
+								CONNECT 102 Timed out\n
+								CONNECT 103 Unknown host\n
+								CONNECT 104 socket error: {d}\n
+								CONNECT 105 permission denied\n
+								CONNECT 106 network down\n
+								CONNECT 107 network unreachable\n
+
+
+
