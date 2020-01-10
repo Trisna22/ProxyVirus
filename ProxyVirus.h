@@ -336,6 +336,7 @@ void ProxyVirus::ForkConnection(int connection)
 				if (StartConnectionThread(SOCKET, connection, &thread1, mutex) == false)
 				{
 					send(connection, ERROR_MSG.c_str(), ERROR_MSG.length(), 0);
+					close(SOCKET);
 					close(connection);
 					return;
 				}
@@ -352,6 +353,7 @@ void ProxyVirus::ForkConnection(int connection)
 					if (result == 0)
 					{
 						close(connection);
+						close(SOCKET);
 						pthread_cancel(thread1);
 						return;
 					}
@@ -363,6 +365,7 @@ void ProxyVirus::ForkConnection(int connection)
 						send(connection , ERROR_MSG.c_str(), ERROR_MSG.length(), 0);
 						pthread_cancel(thread1);
 						close(connection);
+						close(SOCKET);
 						return;
 					}
 
@@ -371,7 +374,17 @@ void ProxyVirus::ForkConnection(int connection)
 					int bytes = result = recv(connection, data, sizeof(data), 0);
 					if (bytes == -1)
 					{
+						printf("Failed to read data from clientsocket! Error code: %d\n\n", errno);
 						close(connection);
+						close(SOCKET);
+						pthread_cancel(thread1);
+						return;
+					}
+					else if (bytes == 0)
+					{
+						printf("Failed to read data from clientsocket!\n\n");
+						close(connection);
+						close(SOCKET);
 						pthread_cancel(thread1);
 						return;
 					}
@@ -388,7 +401,8 @@ void ProxyVirus::ForkConnection(int connection)
 					{
 						ERROR_MSG ="\nFailed to unlock the mutex object!\n\n";
 						send(connection, ERROR_MSG.c_str(), ERROR_MSG.length(), 0);
-						pthread_cancel(thread1);
+						pthread_cancel(thread1);						
+						close(SOCKET);
 						close(connection);
 						return;
 					}
@@ -653,23 +667,7 @@ void* ProxyVirus::ConnectionThread(void* param)
 			close(args->clientSocket);
 			pthread_exit((void*)0);
 		}
-
-		// Receive the client data for proxyserver.
-		char data[1024];
-		int bytes = result = recv(args->proxySocket, data, sizeof(data), 0);
-		if (bytes == -1)
-		{
-			ERROR_MSG ="\nFailed to lock the mutex object!\n\n";	
-			send(args->clientSocket, ERROR_MSG.c_str(), ERROR_MSG.length(), 0);
-			close(args->clientSocket);
-			close(args->proxySocket);
-			pthread_exit((void*)0);
-		}
-
-		data[bytes] = '\0';
-		string dataClientServer = data;
-		printf("proxydata TO BOUNCE: %s\n", dataClientServer.c_str());
-
+		
 		// Get mutex object.
 		if (pthread_mutex_lock(&mutex) != 0)
 		{
@@ -679,8 +677,34 @@ void* ProxyVirus::ConnectionThread(void* param)
 			close(args->proxySocket);
 			close(args->clientSocket);
 			pthread_exit((void*)0);
+			return 0;
 		}
 
+		// Receive the client data for proxyserver.
+		char data[1024];
+		int bytes = result = recv(args->proxySocket, data, sizeof(data), 0);
+		if (bytes == -1)
+		{
+			ERROR_MSG ="\nFailed to receive bytes from proxyserver! Error code: " + to_string(errno) + "\nClosing...\n\n";	
+			send(args->clientSocket, ERROR_MSG.c_str(), ERROR_MSG.length(), 0);
+			close(args->clientSocket);
+			close(args->proxySocket);
+			pthread_exit((void*)0);
+			return 0;
+		}
+		else if (bytes == 0)
+		{
+			ERROR_MSG ="\nFailed to receive bytes from proxyserver!\nClosing...\n\n";	
+			send(args->clientSocket, ERROR_MSG.c_str(), ERROR_MSG.length(), 0);
+			close(args->clientSocket);
+			close(args->proxySocket);
+			pthread_exit((void*)0);
+			return 0;
+		}
+
+		data[bytes] = '\0';
+		string dataClientServer = data;
+		printf("proxydata TO BOUNCE: %s\n", dataClientServer.c_str());
 
 		// Send the data to client.
 		send(args->clientSocket, dataClientServer.c_str(), dataClientServer.length(), 0);
@@ -693,6 +717,7 @@ void* ProxyVirus::ConnectionThread(void* param)
 			close(args->proxySocket);
 			close(args->clientSocket);
 			pthread_exit((void*)0);
+			return 0;
 		}
 	}
 }
