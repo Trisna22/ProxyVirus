@@ -9,7 +9,9 @@ You can use the program as an IP hider too, the program won't have log files and
 Todo's:
 
 -Deleting log files from system?
+
 -Using SSL trough socket.
+
 -Curl 
 
 
